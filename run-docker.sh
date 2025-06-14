@@ -5,18 +5,20 @@ echo "1) Development"
 echo "2) UAT"
 echo "3) Production"
 echo "-----------------------------"
-# shellcheck disable=SC2162
 read -p "Enter your choice (1-3): " CHOICE
 
 case $CHOICE in
   1)
     PROFILE="dev"
+    PORT=8081
     ;;
   2)
     PROFILE="uat"
+    PORT=8082
     ;;
   3)
     PROFILE="prod"
+    PORT=8083
     ;;
   *)
     echo "❌ Invalid option. Please choose 1, 2, or 3."
@@ -28,7 +30,6 @@ echo ""
 echo "🛠  Building Spring Boot application..."
 ./mvnw clean package -DskipTests
 
-# shellcheck disable=SC2181
 if [ $? -ne 0 ]; then
   echo "❌ Build failed. Exiting."
   exit 1
@@ -43,23 +44,15 @@ echo "🧹 Cleaning up any existing container named demo-$PROFILE..."
 docker rm -f demo-$PROFILE 2>/dev/null || true
 
 echo ""
-echo "🚀 Starting container with Spring profile: $PROFILE"
+echo "🚀 Starting container with Spring profile: $PROFILE on port $PORT"
 
-if [ "$PROFILE" == "dev" ] || [ "$PROFILE" == "prod" ] || [ "$PROFILE" == "uat" ]; then
-  VOLUME_NAME="h2-data-$PROFILE"
-  docker run -d \
-    -p 8080:8080 \
-    -e SPRING_PROFILES_ACTIVE=$PROFILE \
-    -v $VOLUME_NAME:/data \
-    --name demo-$PROFILE \
-    demo-app:$PROFILE
-else
-  docker run -d \
-    -p 8080:8080 \
-    -e SPRING_PROFILES_ACTIVE=$PROFILE \
-    --name demo-$PROFILE \
-    demo-app:$PROFILE
-fi
+VOLUME_NAME="h2-data-$PROFILE"
+docker run -d \
+  -p $PORT:8080 \
+  -e SPRING_PROFILES_ACTIVE=$PROFILE \
+  -v $VOLUME_NAME:/data \
+  --name demo-$PROFILE \
+  demo-app:$PROFILE
 
 echo ""
-echo "✅ Application is running with '$PROFILE' profile at: http://localhost:8080"
+echo "✅ Application for '$PROFILE' is running at: http://localhost:$PORT"
